@@ -1,4 +1,6 @@
+import { Dayjs } from 'dayjs'
 import IntervalAdapteer from './adapters/interval'
+import { getTime } from './libs/time'
 function getDefaultAdapter() {
   var adapter
   if (typeof requestAnimationFrame !== 'undefined') {
@@ -26,6 +28,8 @@ export interface Config {
   executeFn: any // 执行函数
   type: Type // 配置方式
   interval: number // 间隔时间
+  endTime: string | Dayjs // 结束时间
+  format: string
 }
 
 var defaults: Config = {
@@ -34,6 +38,8 @@ var defaults: Config = {
   executeFn: () => {},
   type: Type.Simple,
   interval: 1000,
+  endTime: getTime(),
+  format: 'HH:mm:ss',
 }
 
 export default defaults

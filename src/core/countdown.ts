@@ -1,6 +1,8 @@
 // import * as _ from 'lodash'
+import dayjs, { Dayjs } from 'dayjs'
 import defaults, { Config } from '../defaults'
 import { RunStatus } from '../defaults'
+import { getTime, subtract } from '../libs'
 
 let status = RunStatus.Unstarted
 
@@ -17,9 +19,28 @@ class Countdown {
     return this._config
   }
 
-  private _text: string
   get text() {
-    return this._text
+    return this.adapter.text
+  }
+
+  private _hour: number
+  get hour() {
+    return this.adapter.hour
+  }
+
+  private _minute: number
+  get minute() {
+    return this._adapter.minute
+  }
+
+  private _second: number
+  get second() {
+    return this.adapter.second
+  }
+
+  private _value: string
+  get value() {
+    return this.adapter.value
   }
 
   private _adapter: any
@@ -28,9 +49,15 @@ class Countdown {
   }
   constructor(instanceConfig: any) {
     this._config = instanceConfig
+
+    const end = getTime(instanceConfig.endTime)
+    const now = getTime()
+
     this._adapter = new this.config.adapter(
       this.config.interval,
-      this.config.executeFn
+      this.config.executeFn,
+      end.diff(now),
+      this.config.format
     )
   }
 
@@ -47,15 +74,16 @@ class Countdown {
   }
 
   start() {
-    let that = this;
+    let that = this
     return new Promise((resolve, reject) => {
-      that.willFnExecuted()
+      that
+        .willFnExecuted()
         .then((res) => {
           if (!res) return
           return that.adapter.run()
         })
         .then(() => {
-          console.log('run one time completed')
+          console.log('run completed')
         })
         .catch((error) => {
           reject(error)
