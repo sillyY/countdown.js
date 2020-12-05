@@ -1,0 +1,17 @@
+{
+  "version": "0.1.0",
+  "presentation": {
+    "echo": false,
+    "reveal": "always",
+    "focus": false,
+    "panel": "dedicated",
+    "showReuseMessage": false
+  },
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "watch",
+      "group": "build"
+    }
+  ]
+}
