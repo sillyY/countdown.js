@@ -10,7 +10,7 @@ export function subtract(time) {
   return time.subtract(1, 'second')
 }
 
-export enum Time {
+export const enum Time {
   MILLISECOND = 1,
   SECOND = 1000 * Time.MILLISECOND,
   MINUTE = 60 * Time.SECOND,

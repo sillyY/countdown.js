@@ -19,10 +19,6 @@ class Countdown {
     return this._config
   }
 
-  get text() {
-    return this.adapter.text
-  }
-
   private _hour: number
   get hour() {
     return this.adapter.hour
