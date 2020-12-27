@@ -6,6 +6,10 @@ export function getTime(time: string | dayjs.Dayjs = dayjs()) {
   return dayjs(time)
 }
 
+// export function toTime(timestamp) {
+//   return dayjs()
+// }
+
 export function subtract(time) {
   return time.subtract(1, 'second')
 }

@@ -1,25 +1,39 @@
-import Countdown from './core/countdown'
+// import { createAdapter } from "./adapter"
+import Interval from './adapters/interval'
+import RequestAnimationFrame from './adapters/raf'
+import { getTime } from './libs'
 
-export default Countdown
+let adapter
 
-// var app = Countdown.create({
-//   interval: 1000,
-//   executeFn: () => {
-//     console.log('start')
-//     // console.log(`${app.hour}:${app.minute}:${app.second}`)
-//     if (app.value) {
-//       console.log(`${app.value}`)
-//     }
-//   },
-//   endTime: '2020-12-06',
-//   format: 'D天 HH:mm:ss',
-// })
-// app.start()
-// setTimeout(() => {
-//   app.pause()
-// }, 5000)
+function createAdapter({ start, end, callback }) {
+  if (typeof requestAnimationFrame !== 'undefined') {
+    return new RequestAnimationFrame(start, end, callback)
+  } else {
+    return new Interval(start, end, callback)
+  }
+}
+function ensureAdapter(options) {
+  return adapter || (adapter = createAdapter(options))
+}
 
-// setTimeout(() => {
-//   app.resume()
-// }, 10000)
-// console.log(app)
+function pruneAdapterOptions(args) {
+  let start = args.start
+  if (!start) {
+    start = getTime().toDate()
+  } else {
+    // 省略格式化
+  }
+
+  return {
+    start,
+    end: getTime(args.end).toDate(),
+    callback: args.callback,
+  }
+}
+
+export const createApp = (args) => {
+  const adapterOptions = pruneAdapterOptions(args)
+  const app = ensureAdapter(adapterOptions)
+
+  return app
+}

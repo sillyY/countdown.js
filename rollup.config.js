@@ -8,9 +8,9 @@ export default {
   input: path.resolve(__dirname, 'src/index.ts'),
   output: {
     dir: 'dist',
-    format: 'esm',
+    format: 'umd',
     name: 'countdown',
-    exports: 'default',
+    exports: 'named',
   },
   external: ['path'],
   plugins: [typescript(), nodeResolve(), commonjs({ extensions: ['.js', '.ts'] })],
