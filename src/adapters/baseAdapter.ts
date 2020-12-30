@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { isFunction } from 'lodash'
-import { isValidDate } from '../libs'
+import { isValidDate, Time } from '../libs'
 import { warn } from '../warn'
 
 export interface Timespan {
@@ -11,7 +11,7 @@ export interface Timespan {
   hours?: number
   minutes?: number
   seconds?: number
-  milliseconds?: number
+  millseconds?: number
 }
 
 // export interface Options {
@@ -34,14 +34,28 @@ export interface Timespan {
 // }
 
 export function format(time, length = 2) {
-  return time.toString().padStart(length, '0')
+  let timeStr = time.toString()
+  const remainderNumber = timeStr.split('.')[1]
+  if (!remainderNumber || remainderNumber.length < length) {
+    return timeStr.padStart(length, '0')
+  } else {
+    return ~~((15.7784514 * 10 ** length) / 10 ** length)
+  }
 }
 
-export abstract class BaseAdapter {
+export interface IBaseAdapter {
+  date: number
+  hour: number
+  minute: number
+  second: number
+  millsecond: number
+}
+
+export abstract class BaseAdapter implements IBaseAdapter {
   protected running: boolean
-  protected laps: Timespan[]
   protected time: number
   protected times: Timespan
+  laps: Timespan[]
 
   constructor(
     public readonly startTime: Date,
@@ -70,20 +84,60 @@ export abstract class BaseAdapter {
   }
 
   get millsecond() {
-    return format(Math.floor(this.times.milliseconds), 3)
+    return format(Math.floor(this.times.millseconds), 3)
   }
 
   protected initialize() {
     const time = this.endTime.getTime() - this.startTime.getTime()
-    this.times = {
-      value: time,
-      days: Math.floor(time / 1000 / 60 / 60 / 24),
-      hours: Math.floor((time / 1000 / 60 / 60) % 24),
-      minutes: Math.floor((time / 1000 / 60) % 60),
-      seconds: Math.floor((time / 1000) % 60),
-      milliseconds: Math.floor(time % 1000),
+    this.times = this.parseTimestamp(time)
+  }
+
+  protected parseTimestamp(timestamp: number) {
+    return {
+      value: timestamp,
+      days: ~~(timestamp / 1000 / 60 / 60 / 24),
+      hours: ~~((timestamp / 1000 / 60 / 60) % 24),
+      minutes: ~~((timestamp / 1000 / 60) % 60),
+      seconds: ~~((timestamp / 1000) % 60),
+      millseconds: ~~(timestamp % 1000),
     }
   }
 
   abstract start(): void
+
+  protected onWillPauseExecute() {
+    this.running = false
+  }
+  abstract pause(): void
+
+  protected onWillStopExecute() {
+    this.running = false
+    this.time = null
+    this.times = {
+      value: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      millseconds: 0,
+    }
+    this.callback()
+  }
+  abstract stop(): void
+
+  protected lap() {
+    const { value, days, hours, minutes, seconds, millseconds } = this.times
+    this.laps.push({
+      value,
+      days,
+      hours,
+      minutes,
+      seconds,
+      millseconds,
+    })
+  }
+
+  protected clear() {
+    this.laps = []
+  }
 }

@@ -26,17 +26,26 @@ class Interval extends BaseAdapter {
     this.callback.call(this)
   }
   calculate() {
-    var nowTime = new Date().getTime();
-		var time = this.endTime.getTime() - nowTime;
-		
+    var nowTime = new Date().getTime()
+    var time = this.endTime.getTime() - nowTime
+
     this.times = {
       value: time,
       days: Math.floor(time / 1000 / 60 / 60 / 24),
       hours: Math.floor((time / 1000 / 60 / 60) % 24),
       minutes: Math.floor((time / 1000 / 60) % 60),
       seconds: Math.floor((time / 1000) % 60),
-      milliseconds: Math.floor(time % 1000),
+      millseconds: Math.floor(time % 1000),
     }
+  }
+  pause() {
+    this.onWillPauseExecute()
+    clearInterval(this.timer)
+  }
+  stop() {
+    this.onWillStopExecute()
+    this.timer && clearInterval(this.timer)
+    this.timer = null
   }
 }
 

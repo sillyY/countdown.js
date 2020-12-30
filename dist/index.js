@@ -305,7 +305,14 @@
 	// }
 	function format(time, length) {
 	    if (length === void 0) { length = 2; }
-	    return time.toString().padStart(length, '0');
+	    var timeStr = time.toString();
+	    var remainderNumber = timeStr.split('.')[1];
+	    if (!remainderNumber || remainderNumber.length < length) {
+	        return timeStr.padStart(length, '0');
+	    }
+	    else {
+	        return ~~((15.7784514 * Math.pow(10, length)) / Math.pow(10, length));
+	    }
 	}
 	exports.format = format;
 	var BaseAdapter = /** @class */ (function () {
@@ -347,21 +354,54 @@
 	    });
 	    Object.defineProperty(BaseAdapter.prototype, "millsecond", {
 	        get: function () {
-	            return format(Math.floor(this.times.milliseconds), 3);
+	            return format(Math.floor(this.times.millseconds), 3);
 	        },
 	        enumerable: false,
 	        configurable: true
 	    });
 	    BaseAdapter.prototype.initialize = function () {
 	        var time = this.endTime.getTime() - this.startTime.getTime();
-	        this.times = {
-	            value: time,
-	            days: Math.floor(time / 1000 / 60 / 60 / 24),
-	            hours: Math.floor((time / 1000 / 60 / 60) % 24),
-	            minutes: Math.floor((time / 1000 / 60) % 60),
-	            seconds: Math.floor((time / 1000) % 60),
-	            milliseconds: Math.floor(time % 1000),
+	        this.times = this.parseTimestamp(time);
+	    };
+	    BaseAdapter.prototype.parseTimestamp = function (timestamp) {
+	        return {
+	            value: timestamp,
+	            days: ~~(timestamp / 1000 / 60 / 60 / 24),
+	            hours: ~~((timestamp / 1000 / 60 / 60) % 24),
+	            minutes: ~~((timestamp / 1000 / 60) % 60),
+	            seconds: ~~((timestamp / 1000) % 60),
+	            millseconds: ~~(timestamp % 1000),
 	        };
+	    };
+	    BaseAdapter.prototype.onWillPauseExecute = function () {
+	        this.running = false;
+	    };
+	    BaseAdapter.prototype.onWillStopExecute = function () {
+	        this.running = false;
+	        this.time = null;
+	        this.times = {
+	            value: 0,
+	            days: 0,
+	            hours: 0,
+	            minutes: 0,
+	            seconds: 0,
+	            millseconds: 0,
+	        };
+	        this.callback();
+	    };
+	    BaseAdapter.prototype.lap = function () {
+	        var _a = this.times, value = _a.value, days = _a.days, hours = _a.hours, minutes = _a.minutes, seconds = _a.seconds, millseconds = _a.millseconds;
+	        this.laps.push({
+	            value: value,
+	            days: days,
+	            hours: hours,
+	            minutes: minutes,
+	            seconds: seconds,
+	            millseconds: millseconds,
+	        });
+	    };
+	    BaseAdapter.prototype.clear = function () {
+	        this.laps = [];
 	    };
 	    return BaseAdapter;
 	}());
@@ -400,8 +440,17 @@
 	            hours: Math.floor((time / 1000 / 60 / 60) % 24),
 	            minutes: Math.floor((time / 1000 / 60) % 60),
 	            seconds: Math.floor((time / 1000) % 60),
-	            milliseconds: Math.floor(time % 1000),
+	            millseconds: Math.floor(time % 1000),
 	        };
+	    };
+	    Interval.prototype.pause = function () {
+	        this.onWillPauseExecute();
+	        clearInterval(this.timer);
+	    };
+	    Interval.prototype.stop = function () {
+	        this.onWillStopExecute();
+	        this.timer && clearInterval(this.timer);
+	        this.timer = null;
 	    };
 	    return Interval;
 	}(baseAdapter.BaseAdapter));
@@ -418,6 +467,8 @@
 	        return _super.call(this, startTime, endTime, callback) || this;
 	    }
 	    RequestAnimationFrame.prototype.start = function () {
+	        if (this.times.value === 0)
+	            this.initialize();
 	        if (!this.time)
 	            this.time = performance.now();
 	        if (!this.running) {
@@ -435,46 +486,59 @@
 	    };
 	    RequestAnimationFrame.prototype.calculate = function (timestamp) {
 	        var diff = timestamp - this.time;
-	        this.times.milliseconds -= diff;
 	        if (diff > 1000) {
-	            var times = ((diff / 1000) >> 0) + 1;
-	            for (var i = 0; i < times; i++) {
-	                if (this.times.milliseconds < 0) {
-	                    this.times.seconds -= 1;
-	                    this.times.milliseconds += 1000;
-	                }
-	                if (this.times.seconds < 0) {
-	                    this.times.minutes -= 1;
-	                    this.times.seconds += 60;
-	                }
-	                if (this.times.minutes < 0) {
-	                    this.times.hours -= 1;
-	                    this.times.minutes += 60;
-	                }
-	                if (this.times.hours < 0) {
-	                    this.times.days -= 1;
-	                    this.times.hours -= 24;
-	                }
-	            }
+	            this.onDidIdleExecute(diff);
+	            this.onDidCarryCalculate();
 	        }
 	        else {
-	            if (this.times.milliseconds < 0) {
-	                this.times.seconds -= 1;
-	                this.times.milliseconds += 1000;
-	            }
-	            if (this.times.seconds < 0) {
-	                this.times.minutes -= 1;
-	                this.times.seconds += 60;
-	            }
-	            if (this.times.minutes < 0) {
-	                this.times.hours -= 1;
-	                this.times.minutes += 60;
-	            }
-	            if (this.times.hours < 0) {
-	                this.times.days -= 1;
-	                this.times.hours -= 24;
-	            }
+	            this.times.millseconds -= diff;
+	            this.onDidCarryCalculate();
 	        }
+	    };
+	    // If the page is not visible， raf will pause
+	    // handle after processing idle
+	    RequestAnimationFrame.prototype.onDidIdleExecute = function (timestamp) {
+	        var _a = this.parseTimestamp(timestamp), days = _a.days, hours = _a.hours, minutes = _a.minutes, seconds = _a.seconds, millseconds = _a.millseconds;
+	        this.times.days -= days;
+	        this.times.hours -= hours;
+	        this.times.minutes -= minutes;
+	        this.times.seconds -= seconds;
+	        this.times.millseconds -= millseconds;
+	    };
+	    // carry calculate
+	    // eg: 61 second = 1 minute and 1 second
+	    RequestAnimationFrame.prototype.onDidCarryCalculate = function () {
+	        if (this.times.millseconds < 0) {
+	            this.times.seconds -= 1;
+	            this.times.millseconds += 1000;
+	        }
+	        if (this.times.seconds < 0) {
+	            this.times.minutes -= 1;
+	            this.times.seconds += 60;
+	        }
+	        if (this.times.minutes < 0) {
+	            this.times.hours -= 1;
+	            this.times.minutes += 60;
+	        }
+	        if (this.times.hours < 0) {
+	            this.times.days -= 1;
+	            this.times.hours -= 24;
+	        }
+	    };
+	    RequestAnimationFrame.prototype.pause = function () {
+	        this.onWillPauseExecute();
+	    };
+	    RequestAnimationFrame.prototype.stop = function () {
+	        this.onWillStopExecute();
+	    };
+	    RequestAnimationFrame.prototype.restart = function () {
+	        if (!this.time)
+	            this.time = performance.now();
+	        if (!this.running) {
+	            this.running = true;
+	            requestAnimationFrame(this.step.bind(this));
+	        }
+	        this.initialize();
 	    };
 	    return RequestAnimationFrame;
 	}(baseAdapter.BaseAdapter));
