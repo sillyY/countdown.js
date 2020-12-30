@@ -121,12 +121,15 @@ export abstract class BaseAdapter implements IBaseAdapter {
       seconds: 0,
       millseconds: 0,
     }
+    this.laps = []
     this.callback()
   }
   abstract stop(): void
 
   protected lap() {
     const { value, days, hours, minutes, seconds, millseconds } = this.times
+    // unrunning disable lap
+    if(value === 0 || !this.running) return
     this.laps.push({
       value,
       days,
@@ -139,5 +142,6 @@ export abstract class BaseAdapter implements IBaseAdapter {
 
   protected clear() {
     this.laps = []
+    this.callback()
   }
 }
