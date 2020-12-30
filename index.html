@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Press+Start+2P"
+      rel="stylesheet"
+    />
+    <link
+      href="https://unpkg.com/nes.css@latest/css/nes.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .mt-10 {
+        margin-top: 10px;
+      }
+      .mt-20 {
+        margin-top: 20px;
+      }
+      .container {
+        padding: 20px;
+        max-width: 970px;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="nes-container">
+        <h2 class="nes-text is-success">countdown</h2>
+        <button type="button" class="nes-btn is-primary start-btn">
+          start
+        </button>
+        <button type="button" class="nes-btn pause-btn">pause</button>
+        <button type="button" class="nes-btn is-error stop-btn">stop</button>
+        <button type="button" class="nes-btn is-success restart-btn">
+          restart
+        </button>
+        <button type="button" class="nes-btn is-warning lap-btn">lap</button>
+        <button type="button" class="nes-btn is-primary clear-btn">
+          clear lap
+        </button>
+
+        <div id="root" class="mt-20"></div>
+        <div class="lists mt-20">
+          <ul class="nes-list is-circle"></ul>
+        </div>
+      </div>
+      <div class="nes-container mt-20">
+        <h2 class="nes-text is-primary">current time</h2>
+        <div class="ans nes-text"></div>
+      </div>
+    </div>
+  </body>
+  <script src="./libs/index.js"></script>
+  <script>
+    const { createApp } = countdown.default
+    const $root = document.querySelector('#root'),
+      $ans = document.querySelector('.ans'),
+      $start = document.querySelector('.start-btn'),
+      $pause = document.querySelector('.pause-btn'),
+      $stop = document.querySelector('.stop-btn'),
+      $restart = document.querySelector('.restart-btn'),
+      $list = document.querySelector('.nes-list'),
+      $lap = document.querySelector('.lap-btn'),
+      $clear = document.querySelector('.clear-btn')
+
+    const app = createApp({
+      end: '2021-01-01',
+      callback: () => {
+        $root.innerHTML = `${app.date}d ${app.hour}h ${app.minute}m ${app.second}s ${app.millsecond}ms`
+        const {laps} = app
+        if (laps.length) {
+          let html = ''
+          laps.forEach((item) => {
+            html += `<li>${item.days}d ${item.hours}h ${item.minutes}m ${item.seconds}s ${item.millseconds}ms</li>`
+          })
+          $list.innerHTML = html
+        }else {
+          $list.innerHTML = ''
+        }
+      },
+    })
+
+    $start.onclick = function () {
+      app.start()
+    }
+    $pause.onclick = function () {
+      app.pause()
+    }
+    $stop.onclick = function () {
+      app.stop()
+    }
+    $restart.onclick = function () {
+      app.restart()
+    }
+    $lap.onclick = function () {
+      app.lap()
+    }
+    $clear.onclick = function () {
+      app.clear()
+    }
+
+    function step() {
+      $ans.innerHTML = `${new Date()}`
+      requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  </script>
+</html>
