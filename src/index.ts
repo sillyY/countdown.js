@@ -7,7 +7,8 @@ let adapter
 
 function createAdapter({ start, end, callback }) {
   if (typeof requestAnimationFrame !== 'undefined') {
-    return new RequestAnimationFrame(start, end, callback)
+    // return new RequestAnimationFrame(start, end, callback)
+    return new Interval(start, end, callback)
   } else {
     return new Interval(start, end, callback)
   }
@@ -28,6 +29,7 @@ function pruneAdapterOptions(args) {
     start,
     end: getTime(args.end).toDate(),
     callback: args.callback,
+    delay: args.delay
   }
 }
 

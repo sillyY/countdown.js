@@ -1,41 +1,101 @@
 import { BaseAdapter } from './baseAdapter'
 
+const DELAY = 1000
+
 class Interval extends BaseAdapter {
   constructor(
     startTime: Date,
     endTime: Date,
-    callback: () => void | undefined
+    callback: () => void | undefined,
+    delay?: number
   ) {
     super(startTime, endTime, callback)
+
+    this.time = performance.now()
+    this.ensureDelay(delay)
   }
 
+  private delay: number
   private timer: NodeJS.Timeout
 
+  ensureDelay(time: number | undefined) {
+    let delay = DELAY
+    if (time !== undefined) {
+      delay = time
+    }
+    this.delay = delay
+  }
+
   start() {
+    if (this.times.value === 0) this.initialize()
     if (!this.running) {
       this.running = true
-      this.timer = setInterval(() => {
-        this.step()
-      }, 1000)
+      this.step((performance.now()))
+
+      const date = {
+        now: performance.now(),
+      }
+      this.timer = setInterval(
+        ((date) => {
+          const now = performance.now()
+          this.step(now)
+        }).bind(undefined, date),
+        this.delay
+      )
     }
   }
 
-  step() {
+  step(timestamp) {
     if (!this.running) return
-    this.calculate()
+    this.calculate(timestamp)
+    this.time = timestamp
     this.callback.call(this)
   }
-  calculate() {
-    var nowTime = new Date().getTime()
-    var time = this.endTime.getTime() - nowTime
+  calculate(timestamp) {
+    var diff = timestamp - this.time
+    if (diff > 1000) {
+      this.onDidIdleExecute(diff)
+      this.onDidCarryCalculate()
+    } else {
+      this.times.millseconds -= diff
+      this.onDidCarryCalculate()
+    }
+  }
 
-    this.times = {
-      value: time,
-      days: Math.floor(time / 1000 / 60 / 60 / 24),
-      hours: Math.floor((time / 1000 / 60 / 60) % 24),
-      minutes: Math.floor((time / 1000 / 60) % 60),
-      seconds: Math.floor((time / 1000) % 60),
-      millseconds: Math.floor(time % 1000),
+  // If the page is not visible， raf will pause
+  // handle after processing idle
+  onDidIdleExecute(timestamp) {
+    const { days, hours, minutes, seconds, millseconds } = this.parseTimestamp(
+      timestamp
+    )
+    this.times.days -= days
+    this.times.hours -= hours
+    this.times.minutes -= minutes
+    this.times.seconds -= seconds
+    this.times.millseconds -= millseconds
+  }
+
+  // carry calculate
+  // eg: 61 second = 1 minute and 1 second
+  onDidCarryCalculate() {
+    if (this.times.millseconds < 0) {
+      this.times.seconds -= 1
+      this.times.millseconds += 1000
+    }
+
+    if (this.times.seconds < 0) {
+      this.times.minutes -= 1
+      this.times.seconds += 60
+    }
+
+    if (this.times.minutes < 0) {
+      this.times.hours -= 1
+      this.times.minutes += 60
+    }
+
+    if (this.times.hours < 0) {
+      this.times.days -= 1
+      this.times.hours -= 24
     }
   }
   pause() {
@@ -47,6 +107,25 @@ class Interval extends BaseAdapter {
     this.timer && clearInterval(this.timer)
     this.timer = null
   }
+  restart() {
+  //   if (this.times.value === 0) this.initialize()
+  //   if (!this.time) this.time = performance.now()
+  //   if (!this.running) {
+  //     this.running = true
+  //     this.step((performance.now()))
+
+  //     const date = {
+  //       now: performance.now(),
+  //     }
+  //     this.timer = setInterval(
+  //       ((date) => {
+  //         const now = performance.now()
+  //         this.step(now)
+  //       }).bind(undefined, date),
+  //       this.delay
+  //     )
+  //   }
+  // }
 }
 
 export default Interval
