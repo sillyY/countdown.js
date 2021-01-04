@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { isFunction } from 'lodash'
-import { isValidDate, Time } from '../libs'
+import { getTime, isValidDate, Time } from '../libs'
 import { warn } from '../warn'
 
 export interface Timespan {
@@ -55,6 +55,7 @@ export abstract class BaseAdapter implements IBaseAdapter {
   protected running: boolean
   protected time: number
   protected times: Timespan
+  protected disabled: boolean = false
   laps: Timespan[]
 
   constructor(
@@ -88,8 +89,15 @@ export abstract class BaseAdapter implements IBaseAdapter {
   }
 
   protected initialize() {
-    const time = this.endTime.getTime() - this.startTime.getTime()
-    this.times = this.parseTimestamp(time)
+    const start = this.startTime.getTime(),
+      end = this.endTime.getTime()
+
+    if(end < start) {
+      this.disabled = true
+      warn('End time must be later than start time')
+    }
+    
+    this.times = this.parseTimestamp(end - start)
   }
 
   protected parseTimestamp(timestamp: number) {
@@ -127,6 +135,7 @@ export abstract class BaseAdapter implements IBaseAdapter {
   abstract stop(): void
 
   protected lap() {
+    if(this.disabled) return
     const { value, days, hours, minutes, seconds, millseconds } = this.times
     // unrunning disable lap
     if(value === 0 || !this.running) return
@@ -141,6 +150,7 @@ export abstract class BaseAdapter implements IBaseAdapter {
   }
 
   protected clear() {
+    if(this.disabled) return
     this.laps = []
     this.callback()
   }

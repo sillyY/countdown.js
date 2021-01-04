@@ -8,6 +8,7 @@ class RequestAnimationFrame extends BaseAdapter {
     super(startTime, endTime, callback)
   }
   start() {
+    if(this.disabled) return
     if (this.times.value === 0) this.initialize()
     if (!this.time) this.time = performance.now()
     if (!this.running) {
@@ -16,6 +17,7 @@ class RequestAnimationFrame extends BaseAdapter {
     }
   }
   step(timestamp) {
+    if(this.disabled) return
     if (!this.running) return
     this.calculate(timestamp)
     this.time = timestamp
@@ -71,12 +73,15 @@ class RequestAnimationFrame extends BaseAdapter {
   }
 
   pause() {
+    if(this.disabled) return
     this.onWillPauseExecute()
   }
   stop() {
+    if(this.disabled) return
     this.onWillStopExecute()
   }
   restart() {
+    if(this.disabled) return
     if (!this.time) this.time = performance.now()
     if (!this.running) {
       this.running = true

@@ -283,9 +283,20 @@
 		__classPrivateFieldSet: __classPrivateFieldSet
 	});
 
+	var warn_1 = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.warn = void 0;
+	function warn(msg) {
+	    console.warn("\u001B[1m\u001B[35m[countdown]\u001B[0m\u001B[35m " + msg + "\u001B[0m\n");
+	}
+	exports.warn = warn;
+
+	});
+
 	var baseAdapter = createCommonjsModule(function (module, exports) {
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.BaseAdapter = exports.format = void 0;
+
 	// export interface Options {
 	//   start?: string | number | undefined | null
 	//   end?: string | number | undefined | null
@@ -320,6 +331,7 @@
 	        this.startTime = startTime;
 	        this.endTime = endTime;
 	        this.callback = callback;
+	        this.disabled = false;
 	        this.running = false;
 	        this.laps = [];
 	        this.initialize();
@@ -360,8 +372,12 @@
 	        configurable: true
 	    });
 	    BaseAdapter.prototype.initialize = function () {
-	        var time = this.endTime.getTime() - this.startTime.getTime();
-	        this.times = this.parseTimestamp(time);
+	        var start = this.startTime.getTime(), end = this.endTime.getTime();
+	        if (end < start) {
+	            this.disabled = true;
+	            warn_1.warn('End time must be later than start time');
+	        }
+	        this.times = this.parseTimestamp(end - start);
 	    };
 	    BaseAdapter.prototype.parseTimestamp = function (timestamp) {
 	        return {
@@ -391,6 +407,8 @@
 	        this.callback();
 	    };
 	    BaseAdapter.prototype.lap = function () {
+	        if (this.disabled)
+	            return;
 	        var _a = this.times, value = _a.value, days = _a.days, hours = _a.hours, minutes = _a.minutes, seconds = _a.seconds, millseconds = _a.millseconds;
 	        // unrunning disable lap
 	        if (value === 0 || !this.running)
@@ -405,6 +423,8 @@
 	        });
 	    };
 	    BaseAdapter.prototype.clear = function () {
+	        if (this.disabled)
+	            return;
 	        this.laps = [];
 	        this.callback();
 	    };
@@ -434,6 +454,8 @@
 	    };
 	    Interval.prototype.start = function () {
 	        var _this = this;
+	        if (this.disabled)
+	            return;
 	        if (this.times.value === 0)
 	            this.initialize();
 	        if (!this.running) {
@@ -497,31 +519,38 @@
 	        }
 	    };
 	    Interval.prototype.pause = function () {
+	        if (this.disabled)
+	            return;
 	        this.onWillPauseExecute();
 	        clearInterval(this.timer);
 	    };
 	    Interval.prototype.stop = function () {
+	        if (this.disabled)
+	            return;
 	        this.onWillStopExecute();
 	        this.timer && clearInterval(this.timer);
 	        this.timer = null;
 	    };
 	    Interval.prototype.restart = function () {
-	        var _this = this;
-	        if (this.times.value === 0)
-	            this.initialize();
-	        if (!this.time)
-	            this.time = performance.now();
-	        if (!this.running) {
-	            this.running = true;
-	            this.step((performance.now()));
-	            var date = {
-	                now: performance.now(),
-	            };
-	            this.timer = setInterval((function (date) {
-	                var now = performance.now();
-	                _this.step(now);
-	            }).bind(undefined, date), this.delay);
-	        }
+	        if (this.disabled)
+	            return;
+	        //   if (this.times.value === 0) this.initialize()
+	        //   if (!this.time) this.time = performance.now()
+	        //   if (!this.running) {
+	        //     this.running = true
+	        //     this.step((performance.now()))
+	        //     const date = {
+	        //       now: performance.now(),
+	        //     }
+	        //     this.timer = setInterval(
+	        //       ((date) => {
+	        //         const now = performance.now()
+	        //         this.step(now)
+	        //       }).bind(undefined, date),
+	        //       this.delay
+	        //     )
+	        //   }
+	        // }
 	    };
 	    return Interval;
 	}(baseAdapter.BaseAdapter));

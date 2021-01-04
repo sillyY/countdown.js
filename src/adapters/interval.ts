@@ -27,6 +27,7 @@ class Interval extends BaseAdapter {
   }
 
   start() {
+    if(this.disabled) return
     if (this.times.value === 0) this.initialize()
     if (!this.running) {
       this.running = true
@@ -99,15 +100,18 @@ class Interval extends BaseAdapter {
     }
   }
   pause() {
+    if(this.disabled) return
     this.onWillPauseExecute()
     clearInterval(this.timer)
   }
   stop() {
+    if(this.disabled) return
     this.onWillStopExecute()
     this.timer && clearInterval(this.timer)
     this.timer = null
   }
   restart() {
+    if(this.disabled) return
   //   if (this.times.value === 0) this.initialize()
   //   if (!this.time) this.time = performance.now()
   //   if (!this.running) {
@@ -126,6 +130,7 @@ class Interval extends BaseAdapter {
   //     )
   //   }
   // }
+  }
 }
 
 export default Interval
