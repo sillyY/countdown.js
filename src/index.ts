@@ -7,8 +7,7 @@ let adapter
 
 function createAdapter({ start, end, callback }) {
   if (typeof requestAnimationFrame !== 'undefined') {
-    // return new RequestAnimationFrame(start, end, callback)
-    return new Interval(start, end, callback)
+    return new RequestAnimationFrame(start, end, callback)
   } else {
     return new Interval(start, end, callback)
   }

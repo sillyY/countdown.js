@@ -14,25 +14,6 @@ export interface Timespan {
   millseconds?: number
 }
 
-// export interface Options {
-//   start?: string | number | undefined | null
-//   end?: string | number | undefined | null
-//   callback?: () => void
-// }
-// export interface AdapterOptions {
-//   start: Date
-//   end: Date
-//   callback?: () => void
-// }
-
-// export function checkDate(date: unknown) {
-//   if (!isValidDate(date)) {
-//     console.warn(`value cannot be valid date: ${String(date)}`)
-//     return false
-//   }
-//   return true
-// }
-
 export function format(time, length = 2) {
   let timeStr = time.toString()
   const remainderNumber = timeStr.split('.')[1]

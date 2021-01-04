@@ -297,23 +297,6 @@
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.BaseAdapter = exports.format = void 0;
 
-	// export interface Options {
-	//   start?: string | number | undefined | null
-	//   end?: string | number | undefined | null
-	//   callback?: () => void
-	// }
-	// export interface AdapterOptions {
-	//   start: Date
-	//   end: Date
-	//   callback?: () => void
-	// }
-	// export function checkDate(date: unknown) {
-	//   if (!isValidDate(date)) {
-	//     console.warn(`value cannot be valid date: ${String(date)}`)
-	//     return false
-	//   }
-	//   return true
-	// }
 	function format(time, length) {
 	    if (length === void 0) { length = 2; }
 	    var timeStr = time.toString();
@@ -532,25 +515,24 @@
 	        this.timer = null;
 	    };
 	    Interval.prototype.restart = function () {
+	        var _this = this;
 	        if (this.disabled)
 	            return;
-	        //   if (this.times.value === 0) this.initialize()
-	        //   if (!this.time) this.time = performance.now()
-	        //   if (!this.running) {
-	        //     this.running = true
-	        //     this.step((performance.now()))
-	        //     const date = {
-	        //       now: performance.now(),
-	        //     }
-	        //     this.timer = setInterval(
-	        //       ((date) => {
-	        //         const now = performance.now()
-	        //         this.step(now)
-	        //       }).bind(undefined, date),
-	        //       this.delay
-	        //     )
-	        //   }
-	        // }
+	        if (this.times.value === 0)
+	            this.initialize();
+	        if (!this.time)
+	            this.time = performance.now();
+	        if (!this.running) {
+	            this.running = true;
+	            this.step((performance.now()));
+	            var date = {
+	                now: performance.now(),
+	            };
+	            this.timer = setInterval((function (date) {
+	                var now = performance.now();
+	                _this.step(now);
+	            }).bind(undefined, date), this.delay);
+	        }
 	    };
 	    return Interval;
 	}(baseAdapter.BaseAdapter));
@@ -559,6 +541,104 @@
 
 	var interval = /*#__PURE__*/Object.defineProperty({
 		default: _default
+	}, '__esModule', {value: true});
+
+	var RequestAnimationFrame = /** @class */ (function (_super) {
+	    tslib_1.__extends(RequestAnimationFrame, _super);
+	    function RequestAnimationFrame(startTime, endTime, callback) {
+	        return _super.call(this, startTime, endTime, callback) || this;
+	    }
+	    RequestAnimationFrame.prototype.start = function () {
+	        if (this.disabled)
+	            return;
+	        if (this.times.value === 0)
+	            this.initialize();
+	        if (!this.time)
+	            this.time = performance.now();
+	        if (!this.running) {
+	            this.running = true;
+	            requestAnimationFrame(this.step.bind(this));
+	        }
+	    };
+	    RequestAnimationFrame.prototype.step = function (timestamp) {
+	        if (this.disabled)
+	            return;
+	        if (!this.running)
+	            return;
+	        this.calculate(timestamp);
+	        this.time = timestamp;
+	        this.callback.call(this);
+	        requestAnimationFrame(this.step.bind(this));
+	    };
+	    RequestAnimationFrame.prototype.calculate = function (timestamp) {
+	        var diff = timestamp - this.time;
+	        if (diff > 1000) {
+	            this.onDidIdleExecute(diff);
+	            this.onDidCarryCalculate();
+	        }
+	        else {
+	            this.times.millseconds -= diff;
+	            this.onDidCarryCalculate();
+	        }
+	    };
+	    // If the page is not visible， raf will pause
+	    // handle after processing idle
+	    RequestAnimationFrame.prototype.onDidIdleExecute = function (timestamp) {
+	        var _a = this.parseTimestamp(timestamp), days = _a.days, hours = _a.hours, minutes = _a.minutes, seconds = _a.seconds, millseconds = _a.millseconds;
+	        this.times.days -= days;
+	        this.times.hours -= hours;
+	        this.times.minutes -= minutes;
+	        this.times.seconds -= seconds;
+	        this.times.millseconds -= millseconds;
+	    };
+	    // carry calculate
+	    // eg: 61 second = 1 minute and 1 second
+	    RequestAnimationFrame.prototype.onDidCarryCalculate = function () {
+	        if (this.times.millseconds < 0) {
+	            this.times.seconds -= 1;
+	            this.times.millseconds += 1000;
+	        }
+	        if (this.times.seconds < 0) {
+	            this.times.minutes -= 1;
+	            this.times.seconds += 60;
+	        }
+	        if (this.times.minutes < 0) {
+	            this.times.hours -= 1;
+	            this.times.minutes += 60;
+	        }
+	        if (this.times.hours < 0) {
+	            this.times.days -= 1;
+	            this.times.hours -= 24;
+	        }
+	    };
+	    RequestAnimationFrame.prototype.pause = function () {
+	        if (this.disabled)
+	            return;
+	        this.onWillPauseExecute();
+	    };
+	    RequestAnimationFrame.prototype.stop = function () {
+	        if (this.disabled)
+	            return;
+	        this.onWillStopExecute();
+	    };
+	    RequestAnimationFrame.prototype.restart = function () {
+	        if (this.disabled)
+	            return;
+	        if (!this.time)
+	            this.time = performance.now();
+	        if (!this.running) {
+	            this.running = true;
+	            requestAnimationFrame(this.step.bind(this));
+	        }
+	        this.initialize();
+	    };
+	    return RequestAnimationFrame;
+	}(baseAdapter.BaseAdapter));
+	var _default$1 = RequestAnimationFrame;
+
+
+	var raf = /*#__PURE__*/Object.defineProperty({
+		default: _default$1
 	}, '__esModule', {value: true});
 
 	var dayjs_min = createCommonjsModule(function (module, exports) {
@@ -17812,12 +17892,12 @@
 	// import { createAdapter } from "./adapter"
 
 
+
 	var adapter;
 	function createAdapter(_a) {
 	    var start = _a.start, end = _a.end, callback = _a.callback;
 	    if (typeof requestAnimationFrame !== 'undefined') {
-	        // return new RequestAnimationFrame(start, end, callback)
-	        return new interval.default(start, end, callback);
+	        return new raf.default(start, end, callback);
 	    }
 	    else {
 	        return new interval.default(start, end, callback);

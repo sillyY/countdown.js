@@ -112,24 +112,23 @@ class Interval extends BaseAdapter {
   }
   restart() {
     if(this.disabled) return
-  //   if (this.times.value === 0) this.initialize()
-  //   if (!this.time) this.time = performance.now()
-  //   if (!this.running) {
-  //     this.running = true
-  //     this.step((performance.now()))
+    if (this.times.value === 0) this.initialize()
+    if (!this.time) this.time = performance.now()
+    if (!this.running) {
+      this.running = true
+      this.step((performance.now()))
 
-  //     const date = {
-  //       now: performance.now(),
-  //     }
-  //     this.timer = setInterval(
-  //       ((date) => {
-  //         const now = performance.now()
-  //         this.step(now)
-  //       }).bind(undefined, date),
-  //       this.delay
-  //     )
-  //   }
-  // }
+      const date = {
+        now: performance.now(),
+      }
+      this.timer = setInterval(
+        ((date) => {
+          const now = performance.now()
+          this.step(now)
+        }).bind(undefined, date),
+        this.delay
+      )
+    }
   }
 }
 
